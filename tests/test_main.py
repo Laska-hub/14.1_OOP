@@ -1,59 +1,33 @@
-from pathlib import Path
-
-import pytest
-
-from src.main import Category, Product, load_data_from_json
+from src.main import Category, Product
 
 
-@pytest.fixture
-def sample_products() -> list[Product]:
-    return [Product("Test1", "Desc1", 100.0, 5), Product("Test2", "Desc2", 200.0, 3)]
+def test_add_product() -> None:
+    product = Product("Test", "Desc", 100.0, 5)
+    category = Category("Cat", "Desc", [])
+    category.add_product(product)
+
+    assert "Test" in category.products
 
 
-def test_product_initialization() -> None:
-    product = Product("Phone", "Smartphone", 99999.99, 10)
-    assert product.name == "Phone"
-    assert product.description == "Smartphone"
-    assert product.price == 99999.99
-    assert product.quantity == 10
+def test_new_product_duplicate() -> None:
+    product1 = Product("Phone", "Desc", 100.0, 5)
+    products = [product1]
+
+    new_data = {
+        "name": "Phone",
+        "description": "Desc",
+        "price": 200.0,
+        "quantity": 3,
+    }
+
+    result = Product.new_product(new_data, products)
+
+    assert result.quantity == 8
+    assert result.price == 200.0
 
 
-def test_category_initialization(sample_products: list[Product]) -> None:
-    Category.category_count = 0
-    Category.product_count = 0
+def test_price_setter_invalid() -> None:
+    product = Product("Test", "Desc", 100.0, 5)
+    product.price = -10
 
-    category = Category("Electronics", "Devices", sample_products)
-    assert category.name == "Electronics"
-    assert category.description == "Devices"
-    assert len(category.products) == 2
-    assert Category.category_count == 1
-    assert Category.product_count == 2
-
-
-def test_multiple_categories() -> None:
-    Category.category_count = 0
-    Category.product_count = 0
-
-    products1 = [Product("P1", "D1", 10.0, 1)]
-    products2 = [Product("P2", "D2", 20.0, 2), Product("P3", "D3", 30.0, 3)]
-
-    Category("Cat1", "Desc1", products1)
-    Category("Cat2", "Desc2", products2)
-
-    assert Category.category_count == 2
-    assert Category.product_count == 3
-
-
-def test_load_from_json() -> None:
-    Category.category_count = 0
-    Category.product_count = 0
-
-    # путь к JSON в корне проекта
-    file_path = Path(__file__).resolve().parent.parent / "products.json"
-    categories = load_data_from_json(file_path)
-
-    assert len(categories) == 2
-    assert Category.category_count == 2
-    assert Category.product_count == 4
-    assert categories[0].name == "Смартфоны"
-    assert len(categories[0].products) == 3
+    assert product.price == 100.0
