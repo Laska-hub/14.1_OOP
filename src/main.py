@@ -1,77 +1,119 @@
-import json
-from pathlib import Path
-from typing import List
+from __future__ import annotations
+
+from typing import Iterator, List
 
 
 class Product:
-    """Класс товара"""
+    """Базовый класс товара."""
 
     def __init__(
-        self, name: str, description: str, price: float, quantity: int
+        self,
+        name: str,
+        description: str,
+        price: float,
+        quantity: int,
     ) -> None:
-        self.name: str = name
-        self.description: str = description
-        self.price: float = price
-        self.quantity: int = quantity
+        self.name = name
+        self.description = description
+        self.__price = price
+        self.quantity = quantity
+
+    def __str__(self) -> str:
+        return f"{self.name}, {self.price} руб. Остаток: {self.quantity} шт."
+
+    def __add__(self, other: object) -> float:
+        if not isinstance(other, Product):
+            raise TypeError("Можно складывать только объекты Product")
+
+        if type(self) is not type(other):
+            raise TypeError("Нельзя складывать товары разных категорий")
+
+        return (self.price * self.quantity) + (other.price * other.quantity)
+
+    @property
+    def price(self) -> float:
+        return self.__price
+
+    @price.setter
+    def price(self, value: float) -> None:
+        if value <= 0:
+            raise ValueError("Цена должна быть положительной")
+        self.__price = value
+
+
+class Smartphone(Product):
+    """Класс смартфона."""
+
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        price: float,
+        quantity: int,
+        efficiency: float,
+        model: str,
+        memory: int,
+        color: str,
+    ) -> None:
+        super().__init__(name, description, price, quantity)
+        self.efficiency = efficiency
+        self.model = model
+        self.memory = memory
+        self.color = color
+
+
+class LawnGrass(Product):
+    """Класс газонной травы."""
+
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        price: float,
+        quantity: int,
+        country: str,
+        germination_period: str,
+        color: str,
+    ) -> None:
+        super().__init__(name, description, price, quantity)
+        self.country = country
+        self.germination_period = germination_period
+        self.color = color
 
 
 class Category:
-    """Класс категории товаров"""
+    """Класс категории товаров."""
 
     category_count: int = 0
     product_count: int = 0
 
-    def __init__(self, name: str, description: str, products: List[Product]) -> None:
-        self.name: str = name
-        self.description: str = description
-        self.products: List[Product] = products
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        products: List[Product],
+    ) -> None:
+        self.name = name
+        self.description = description
+        self.__products = products
 
         Category.category_count += 1
         Category.product_count += len(products)
 
+    def __str__(self) -> str:
+        total_quantity = sum(product.quantity for product in self.__products)
+        return f"{self.name}, количество продуктов: " f"{total_quantity} шт."
 
-def load_data_from_json(file_path: str | Path) -> List[Category]:
-    """Загружает данные из JSON и создаёт объекты Category и Product"""
-    categories: List[Category] = []
-    file_path = Path(file_path)
+    def add_product(self, product: Product) -> None:
+        if not isinstance(product, Product):
+            raise TypeError("Можно добавлять только Product " "или его наследников")
 
-    with file_path.open("r", encoding="utf-8") as file:
-        data = json.load(file)
+        self.__products.append(product)
+        Category.product_count += 1
 
-        for category_data in data:
-            products: List[Product] = []
-            for product_data in category_data["products"]:
-                product = Product(
-                    name=product_data["name"],
-                    description=product_data["description"],
-                    price=product_data["price"],
-                    quantity=product_data["quantity"],
-                )
-                products.append(product)
+    @property
+    def products(self) -> str:
+        return "\n".join(str(product) for product in self.__products)
 
-            category = Category(
-                name=category_data["name"],
-                description=category_data["description"],
-                products=products,
-            )
-            categories.append(category)
-
-    return categories
-
-
-if __name__ == "__main__":
-    # Пути к JSON
-    BASE_DIR = Path(__file__).resolve().parent.parent  # поднимаемся в корень
-    json_file = BASE_DIR / "products.json"
-
-    # Загрузка из JSON
-    categories = load_data_from_json(json_file)
-
-    print("После загрузки JSON:")
-    for cat in categories:
-        print(cat.name)
-        print(cat.description)
-        print("Количество товаров:", len(cat.products))
-
-    print("Всего категорий:", Category.category_count)
-    print("Всего товаров:", Category.product_count)
+    def __iter__(self) -> Iterator[Product]:
+        return iter(self.__products)
