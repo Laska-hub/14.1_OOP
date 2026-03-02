@@ -1,59 +1,79 @@
-from pathlib import Path
-
 import pytest
 
-from src.main import Category, Product, load_data_from_json
+from src.main import BaseProduct, Category, LawnGrass, Product, Smartphone
 
 
-@pytest.fixture
-def sample_products() -> list[Product]:
-    return [Product("Test1", "Desc1", 100.0, 5), Product("Test2", "Desc2", 200.0, 3)]
+def test_product_str() -> None:
+    product = Product("Test", "Desc", 100.0, 5)
+    assert str(product) == "Test, 100.0 руб. Остаток: 5 шт."
 
 
-def test_product_initialization() -> None:
-    product = Product("Phone", "Smartphone", 99999.99, 10)
-    assert product.name == "Phone"
-    assert product.description == "Smartphone"
-    assert product.price == 99999.99
-    assert product.quantity == 10
+def test_product_add_same_type() -> None:
+    p1 = Product("A", "Desc", 100.0, 5)
+    p2 = Product("B", "Desc", 200.0, 2)
+
+    assert p1 + p2 == 100 * 5 + 200 * 2
 
 
-def test_category_initialization(sample_products: list[Product]) -> None:
-    Category.category_count = 0
-    Category.product_count = 0
+def test_product_add_different_type() -> None:
+    p1 = Product("A", "Desc", 100.0, 5)
+    s1 = Smartphone("Phone", "Desc", 100.0, 5, 95.5, "S1", 256, "Black")
 
-    category = Category("Electronics", "Devices", sample_products)
-    assert category.name == "Electronics"
-    assert category.description == "Devices"
-    assert len(category.products) == 2
-    assert Category.category_count == 1
-    assert Category.product_count == 2
+    with pytest.raises(TypeError):
+        _ = p1 + s1
 
 
-def test_multiple_categories() -> None:
-    Category.category_count = 0
-    Category.product_count = 0
+def test_price_setter_validation() -> None:
+    product = Product("Test", "Desc", 100.0, 5)
 
-    products1 = [Product("P1", "D1", 10.0, 1)]
-    products2 = [Product("P2", "D2", 20.0, 2), Product("P3", "D3", 30.0, 3)]
-
-    Category("Cat1", "Desc1", products1)
-    Category("Cat2", "Desc2", products2)
-
-    assert Category.category_count == 2
-    assert Category.product_count == 3
+    with pytest.raises(ValueError):
+        product.price = -10
 
 
-def test_load_from_json() -> None:
-    Category.category_count = 0
-    Category.product_count = 0
+def test_smartphone_inheritance() -> None:
+    smartphone = Smartphone(
+        "Phone",
+        "Desc",
+        100.0,
+        5,
+        95.5,
+        "S1",
+        256,
+        "Black",
+    )
 
-    # путь к JSON в корне проекта
-    file_path = Path(__file__).resolve().parent.parent / "products.json"
-    categories = load_data_from_json(file_path)
+    assert isinstance(smartphone, Product)
+    assert isinstance(smartphone, BaseProduct)
 
-    assert len(categories) == 2
-    assert Category.category_count == 2
-    assert Category.product_count == 4
-    assert categories[0].name == "Смартфоны"
-    assert len(categories[0].products) == 3
+
+def test_category_add_product() -> None:
+    product = Product("Test", "Desc", 100.0, 5)
+    category = Category("Tech", "Desc", [product])
+
+    new_product = Product("New", "Desc", 50.0, 2)
+    category.add_product(new_product)
+
+    assert "New" in category.products
+
+
+def test_category_add_invalid() -> None:
+    product = Product("Test", "Desc", 100.0, 5)
+    category = Category("Tech", "Desc", [product])
+
+    with pytest.raises(TypeError):
+        category.add_product("Not a product")  # type: ignore
+
+
+def test_lawngrass_creation() -> None:
+    grass = LawnGrass(
+        "Grass",
+        "Desc",
+        500.0,
+        10,
+        "Russia",
+        "7 days",
+        "Green",
+    )
+
+    assert grass.country == "Russia"
+    assert isinstance(grass, Product)
