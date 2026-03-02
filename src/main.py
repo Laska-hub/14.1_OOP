@@ -1,10 +1,31 @@
 from __future__ import annotations
 
-from typing import Iterator, List
+from abc import ABC, abstractmethod
+from typing import Any, Iterator, List
 
 
-class Product:
-    """Базовый класс товара."""
+class BaseProduct(ABC):
+    """Абстрактный базовый класс продукта."""
+
+    @abstractmethod
+    def __str__(self) -> str:
+        """Строковое представление продукта."""
+
+    @abstractmethod
+    def __add__(self, other: object) -> float:
+        """Сложение продуктов."""
+
+
+class InitReprMixin:
+    """Миксин, выводящий информацию о создании объекта."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        print(f"{self.__class__.__name__}{args}")
+        super().__init__(*args, **kwargs)
+
+
+class Product(InitReprMixin, BaseProduct):
+    """Класс товара."""
 
     def __init__(
         self,
@@ -26,7 +47,7 @@ class Product:
             raise TypeError("Можно складывать только объекты Product")
 
         if type(self) is not type(other):
-            raise TypeError("Нельзя складывать товары разных категорий")
+            raise TypeError("Нельзя складывать товары разных типов")
 
         return (self.price * self.quantity) + (other.price * other.quantity)
 
